@@ -1,0 +1,17 @@
+
+Todo:
+  ☐ vector embedding, pinecone injestion
+  ☐ retrieve the embedding from pinecone 
+  ☐ clean the retrived content or tokens to sentences, more accuracy
+  ☐ heirarchy listing based on text size : heading , sub- headings, points
+  ☐ managing large pdf without hitting llm token limit, token optimization
+  practice mcq question based exact content from external document with small adjustment with llm
+    ☐ creat logic for user selects the topics from heirarchy, instead of user input topic
+    ☐ logic for topics selection based heirarchy and only based on that selected topic
+    ☐ mcq logic , mcq - options logic 
+    ☐ explanation extraction from externel pdf, exact line insead entirely with llm
+
+  frontend-changes
+  ☐ add mcq section ui
+  ☑ update the topics sepecific ui (fix the black rounded bar)
+  ☑ add darkmode theme with minimal rounded button
