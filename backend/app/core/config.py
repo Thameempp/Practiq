@@ -22,6 +22,13 @@ class Settings:
 
     LLM_MODEL: str = "openai/gpt-oss-120b"
     EMBEDDING_MODEL: str = "gemini-embedding-2"
+    RERANKER_MODEL: str = os.getenv(
+        "RERANKER_MODEL",
+        "cross-encoder/ms-marco-MiniLM-L-6-v2",
+    )
+    RETRIEVAL_CANDIDATES: int = int(os.getenv("RETRIEVAL_CANDIDATES", "20"))
+    EXPANDED_RETRIEVAL_CANDIDATES: int = int(os.getenv("EXPANDED_RETRIEVAL_CANDIDATES", "40"))
+    FINAL_CONTEXT_CHUNKS: int = int(os.getenv("FINAL_CONTEXT_CHUNKS", "5"))
 
 
 settings = Settings()

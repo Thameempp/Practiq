@@ -1,14 +1,13 @@
-import os
 import time
 from pinecone import Pinecone, ServerlessSpec
-from pinecone_text.sparse import BM25Encoder
 from src.core.config import settings
-from src.services.embedding_model import result
-from src.services.clean import clean_text
+from src.services.embedding import get_embedding
+from backend.src.services.cleaner import clean_text
 
 pc = Pinecone(api_key=settings.PINECONE_API_KEY)
 index_name = 'rag-project-index'
 DIMENSION = 3072
+
 
 existing_indexes = [idx.name for idx in pc.list_indexes()]
 
@@ -26,14 +25,24 @@ if index_name not in existing_indexes:
 
 
 index = pc.Index(index_name)
-my_vector = [0.012] * DIMENSION
 
-vector_to_upsert = {
-    'id': 'id_chunk1',
-    'values':result.embeddings[0].values,
-    'metadata':{
-        'text': clean_text
-    }
-}
+# ingest chunks to pinecone
+def ingest_chunks(chunks):
 
-index.upsert(vectors=[vector_to_upsert])
+    vectors = []
+
+    for i, chunk in enumerate(chunks):
+
+        embedding = get_embedding(chunk["text"])
+
+        vectors.append({
+            'id': f"chunk-{i}",
+            'values':embedding,
+            'metadata':{
+                'text': chunk["text"],
+                "page": chunk["page"]
+                }
+            })
+    
+    
+    index.upsert(vectors=[vectors])

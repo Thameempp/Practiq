@@ -1,21 +1,26 @@
-from src.services.llm import ask_pdf
+import logging
 
-def main():
-    print('PDF Assistant')
-    print("Type 'exit' or 'quit' to stop.\n")
+import uvicorn
 
-    while True:
-        question = input("Ask Doubt: ").strip()
+from app.api.api import app
 
-        if question.lower() in {"exit", "quit"}:
-            print('Goodbye.')
-            break
 
-        if not question:
-            continue
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
 
-        ask_pdf(question)
-        print()
+logger = logging.getLogger(__name__)
+
+
+def main() -> None:
+    logger.info("starting PDF backend")
+    uvicorn.run(
+        app,
+        host="127.0.0.1",
+        port=8000,
+        log_level="info",
+    )
 
 
 if __name__ == "__main__":

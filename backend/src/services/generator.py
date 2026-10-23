@@ -3,7 +3,7 @@ from groq import Groq
 from src.core.config import settings
 from pathlib import Path
 import time
-from src.services.bm25 import retrieve_relevant_chunks
+from backend.src.services.bm25 import retrieve_relevant_chunks
 from src.services.loader import page_count, documents
 from src.utils.usage import print_usage
 
@@ -87,5 +87,4 @@ def ask_pdf(user_question):
 
     print_usage(final_usage, raw_response.headers)
     
-
 
