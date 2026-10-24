@@ -1,75 +1,53 @@
-import os
-import traceback
+import logging
+from pathlib import Path
 from uuid import uuid4
-from fastapi import  UploadFile, File, HTTPException, APIRouter
+
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from starlette.concurrency import run_in_threadpool
+
 from app.core.config import settings
-from app.services.loader import load_pdf
-from app.services.chunker import chunk_pages
-from app.services.ingestion import ingest_chunks
-from app.services.hierarchy_extractor import extract_hierarchy
+from app.documents.deletion import delete_document_data
+from app.documents.models import Document
+from app.documents.repository import get_document, save_document
+from app.services.chunk_store import remove_chunks
+from app.services.pinecone_index import get_index
+from app.services.upload_pipeline import annotate_hierarchy, process_document
 
-# router setup
-router = APIRouter(
-    prefix='/upload',
-    tags=["upload"]
-)
-
-# folder for uploads
+router = APIRouter(prefix="/upload", tags=["upload"])
+logger = logging.getLogger(__name__)
 upload_dir = settings.BASE_DIR / "uploads"
-os.makedirs(upload_dir, exist_ok=True)
+upload_dir.mkdir(parents=True, exist_ok=True)
 
-# endpoints
+
 @router.post("/upload-pdf/")
-async def upload_file(file: UploadFile = File(...)):
-    # validation for file type
+async def upload_file(file: UploadFile = File(...), knowledge_base_id: str = Form("local")):
     if file.content_type != "application/pdf":
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid file type. Only Pdf file allowed. "
-        )
-
-    # saving the file
+        raise HTTPException(status_code=400, detail="Only PDF files are allowed.")
     document_id = uuid4().hex
-    file_path = os.path.join(upload_dir, file.filename)
-
+    document = Document(document_id=document_id, knowledge_base_id=knowledge_base_id,
+                        filename=Path(file.filename or "Uploaded PDF.pdf").name,
+                        saved_path=str(upload_dir / f"{document_id}.pdf"))
+    save_document(document)
     try:
-        with open(file_path, "wb") as f:
-            while chunk := await file.read(1024*1024):
-                f.write(chunk)
-
-        print("pdf upload complete", flush=True)
-
-        # pipeline : load -> clean -> chunker -> ingest
-        
-        pages, page_count = load_pdf(file_path)
-        print("pdf load complete", flush=True)
-        chunks = chunk_pages(pages)
-        print("chunking complete", flush=True)
-        ingest_chunks(chunks, document_id=document_id, filename=file.filename)
-        print("ingestion complete", flush=True)
-        hierarchy = extract_hierarchy(file_path)
-        annotate_hierarchy(hierarchy, document_id, file.filename)
-        print("hierarchy extraction complete", flush=True)
+        with open(document.saved_path, "wb") as target:
+            while data := await file.read(1024 * 1024):
+                target.write(data)
+        return await run_in_threadpool(process_document, document)
+    except Exception as error:
+        document.status = "failed"
+        save_document(document)
+        logger.exception("PDF upload failed")
+        raise HTTPException(status_code=500, detail="Could not process the PDF. Please retry the upload.") from error
+    finally:
+        await file.close()
 
 
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"failed to process the file: {str(e)}")
-
-
-    return {
-        "document_id": document_id,
-        "filename":file.filename,
-        "pages": page_count,
-        "status":"successfully uploaded",
-        "chunks_count":len(chunks),
-        "saved_path":str(file_path),
-        "hierarchy": hierarchy,
-    }
-
-
-def annotate_hierarchy(nodes, document_id: str, filename: str):
-    for node in nodes:
-        node["documentId"] = document_id
-        node["filename"] = filename
-        annotate_hierarchy(node.get("children", []), document_id, filename)
+@router.delete("/{document_id}")
+def delete_document(document_id: str, knowledge_base_id: str = "local"):
+    document = get_document(document_id, knowledge_base_id)
+    if document is None:
+        raise HTTPException(status_code=404, detail="PDF not found in this knowledge base.")
+    if document.status == "processing":
+        raise HTTPException(status_code=409, detail="Wait for this PDF to finish indexing before removing it.")
+    delete_document_data(document, get_index(), upload_dir, remove_chunks)
+    return {"document_id": document_id, "status": "deleted"}
