@@ -226,3 +226,14 @@ TODO
 /Users/thameem/Documents/projects/pdf-proj/backend/.venv
 /Users/thameem/Documents/projects/pdf-proj/.vscode
 .DS_Store
+
+# Claude Code personal overrides
+.claude/settings.local.json
+
+.claude
+.vscode
+about_project.md
+claude.md
+docs
+# Local knowledge-base registry and clarification state
+backend/data/*.sqlite3*
