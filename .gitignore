@@ -237,3 +237,10 @@ claude.md
 docs
 # Local knowledge-base registry and clarification state
 backend/data/*.sqlite3*
+
+# tests 
+/backend/tests/
+/backend/requirements-dev.txt
+
+# uploads folder
+/backend/uploads

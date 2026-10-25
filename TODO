@@ -1,17 +1,33 @@
 
 Todo:
-  ☐ vector embedding, pinecone injestion
-  ☐ retrieve the embedding from pinecone 
-  ☐ clean the retrived content or tokens to sentences, more accuracy
-  ☐ heirarchy listing based on text size : heading , sub- headings, points
+  ✔ vector embedding, pinecone injestion @done(26-10-25 13:09)
+  ✔ retrieve the embedding from pinecone @done(26-10-25 13:09)
+  ✔ clean the retrived content or tokens to sentences, more accuracy @done(26-10-25 13:09)
+  ✔ heirarchy listing based on text size : heading , sub- headings, points @done(26-10-25 13:09)
   ☐ managing large pdf without hitting llm token limit, token optimization
   practice mcq question based exact content from external document with small adjustment with llm
-    ☐ creat logic for user selects the topics from heirarchy, instead of user input topic
-    ☐ logic for topics selection based heirarchy and only based on that selected topic
-    ☐ mcq logic , mcq - options logic 
-    ☐ explanation extraction from externel pdf, exact line insead entirely with llm
+    ✔ creat logic for user selects the topics from heirarchy, instead of user input topic @done(26-10-25 13:09)
+    ✔ logic for topics selection based heirarchy and only based on that selected topic @done(26-10-25 13:09)
+    ✔ mcq logic , mcq - options logic @done(26-10-25 13:09)
+    ✔ explanation extraction from externel pdf, exact line insead entirely with llm @done(26-10-25 13:09)
 
   frontend-changes
-  ☐ add mcq section ui
-  ☑ update the topics sepecific ui (fix the black rounded bar)
-  ☑ add darkmode theme with minimal rounded button
+  ✔ add mcq section ui @done(26-09-28 19:17)
+  ✔ update the topics sepecific ui (fix the black rounded bar) @done(26-09-28 19:17)
+  ✔ add darkmode theme with minimal rounded button @done(26-09-28 19:17)
+  ✔ currently running agent label @done(26-10-25 13:11)
+  ✔ knowledge base section ui for the uploaded pdf @done(26-10-25 13:12)
+
+
+✔ agents instead normal llm @done(26-10-25 13:09)
+
+  ✔ Custom Python orchestration @done(26-10-25 13:09)
+    - Define typed input and output schemas for each agent.
+    - agents
+      -Retrieval, MCQ Generation, Study Material, Evaluation 
+    - Build the orchestrator and task-specific routing.
+    - Add concurrent execution for independent tasks
+    - Add validation, retries, timeouts and logging.
+
+☐ CoT(chain of thought)
+☐ MAF or langraph 
