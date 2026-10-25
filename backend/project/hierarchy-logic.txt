@@ -1,0 +1,8 @@
+1. Open the PDF and check for a usable table of contents.
+2. If no TOC exists, collect visual text lines from the pages.
+3. Remove repeated page lines and noise.
+4. Build a style profile from font size, weight, numbering, and indentation.
+5. Classify heading levels and construct a nested tree.
+6. Return frontend-ready nodes with titles, pages, summaries, and children.
+7. During ingestion, persist parent paths and page/word/chunk boundaries in the local topic index.
+8. Retrieval resolves selected topics and descendants against this index before searching and ranking; the verifier uses that same evidence path. See topic-aware-retrieval.md.

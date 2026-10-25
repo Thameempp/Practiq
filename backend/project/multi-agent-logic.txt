@@ -1,0 +1,42 @@
+Application workflow orchestration
+
+Entry points
+- get_orchestrator() creates one shared coordinator and bounded worker pool per process, even for simultaneous first requests. Application shutdown cancels outstanding runs and closes the pool.
+- Orchestrator.prepare(QuestionRequest) uses the existing intent/document resolver before creating any task. Ambiguity, missing/processing PDFs and unavailable study-material requests remain structured non-executable responses.
+- Orchestrator.from_decision() accepts an already resolved decision. Orchestrator.events()/stream() execute it. WorkflowRun.state tracks request ID, task results, evidence, attempts, timing, emitted text and errors. snapshot() exposes metadata without copying generated content or evidence into logs.
+- /ask uses the coordinator and a disconnect-aware streaming adapter. /mcq uses the same executor, validates registered document scope/readiness, and returns the existing validated MCQ schema. x-workflow-id identifies streamed and clarification /ask requests.
+
+Responsibilities
+- routing.py: existing intent, document membership, section boundaries and clarification handling.
+- router.py: explicit mapping from supported actions to execution plans. Unknown actions never fall through to QA. Each summary document is its own task; consolidation depends on ALL requested summaries succeeding.
+- orchestration.py: coordinator and WorkflowRun. service.py owns its thread-safe process lifetime.
+- tasks.py and validation.py: injected handlers, dependency graph, per-task limits, workflow limit and concurrency. Duplicate IDs, missing dependencies, cycles and invalid limits are rejected before execution.
+- executor.py: bounded shared thread pool and bounded output queue. executer.py preserves the original misspelled import. Only ready tasks launch, failed dependencies skip, and independent tasks can continue.
+- worker.py/runtime.py: request-local context, task output, cooperative cancellation and retries. dispatch.py/completion.py/events.py handle scheduling, state transitions and stream events.
+- qa_workflow.py/cross_document.py: retrieval evidence followed by answer generation. Selected source chunks are recorded with the task.
+- summary_workflow.py: one full-PDF/section summary task at a time, with coverage metadata, plus optional dependent consolidation. A failed PDF does not stop unrelated PDF summaries; consolidation is skipped if any required result failed.
+- mcq_workflow.py: the service delegates to MCQGenerationAgent and EvaluationAgent for question generation, quote validation and a separate model review of answer/explanation support and ambiguity. Success is recorded only after every check returns a valid MCQResponse. MCQ source references are retained in task evidence.
+
+Execution policy
+- Workflow states: pending, running, succeeded, partial, failed, cancelled; non-executable decisions use waiting_input or unsupported. Tasks additionally distinguish timed_out and skipped. A partial streamed answer followed by an error is never marked successful.
+- Default pool: four workers, at most eight submitted tasks including running work. Overload is explicit. Task timeouts do not create replacement pools or unlimited detached threads.
+- Generic ExecutionPlan can run independent tasks concurrently. Current document-summary plans deliberately use concurrency one to preserve sequential LLM requests and avoid request bursts.
+- Default QA/MCQ task timeout: 120 seconds. PDF summaries scale by registered chunk/page counts from 600 seconds up to SUMMARY_MAX_TIMEOUT_SECONDS (default 7200). Consolidation: 180 seconds. Summary plan duration covers its task durations, and progress/heartbeat events keep long waits visible. Successful summary stages are checkpointed locally.
+- Task retries default to zero because embedding/summary/SDK adapters already own request retries. Opt-in retries cover completed transient failures only. Timeouts still running in a worker are not retried, and output already streamed is never replayed by a retry.
+- Closing a workflow stream or disconnecting sets cancellation flags. Internal ticks allow disconnect checks while a task is silent, without sending internal events to the user. Queued output after cancellation/deadline is discarded.
+- Cancellation is cooperative: Python cannot forcibly stop a blocking SDK call in a thread. An in-flight call may finish later; its result is discarded. Provider boundaries and retry loops check cancellation before making more calls. Running work retains a pool slot until it actually exits, keeping repeated timeouts bounded. SDK timeouts are capped where supported; QA streams are explicitly closed.
+- Provider exceptions are logged by type with workflow metadata and returned as safe task failures. Internal prompts, PDF text and raw provider error details are not included in workflow snapshots.
+
+Available workflows are document QA, cross-document QA, PDF/chapter summaries, optional consolidation and MCQs. Retrieval, summary, MCQ generation and evaluation agents implement the shared BaseAgent contract. Evaluation runs inside the MCQ task; it does not expose an independent HTTP action. Study-material requests remain unsupported. Each successful MCQ request uses two bounded model calls (generation and review); model review supplements exact provenance validation without guaranteeing factual correctness.
+
+Programmatic usage
+coordinator = get_orchestrator()
+run = coordinator.prepare(request)
+if run.plan is None:
+    response = run.decision.response()
+else:
+    for text in coordinator.stream(run):
+        send(text)
+    execution_metadata = run.state.snapshot()
+
+Task results are request-local; there is no durable job queue, automatic restart recovery or public workflow-status endpoint in this version. Existing document/clarification SQLite persistence remains separate.

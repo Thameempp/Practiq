@@ -1,0 +1,12 @@
+1. Receive document ID, selected section scope, and question count. generate_mcqs delegates to MCQGenerationAgent; BaseAgent enforces cancellation/deadlines at entry and exit.
+2. Retrieve and rerank chunks for that document and section.
+3. Prepare a bounded set of passages from the requested document with valid PDF page numbers (mcq/evidence.py).
+4. Ask the LLM for structured questions, 2-4 sentence answer explanations, and exact supporting quotes with source IDs (mcq/prompts.py).
+5. EvaluationAgent validates four distinct ordered options, exactly one correct answer, nonblank question/explanation text, unique question IDs/text, the exact requested count, and required evidence (mcq/schemas.py, mcq/validator.py).
+6. Check each quote occurs in its supplied passage, then resolve filename, document ID, and page from stored metadata (mcq/evaluator.py). Reject unverified references.
+7. Independently review answers, explanations and ambiguity against their verified quotes using a second model call (mcq/review_prompt.py, mcq/quality.py). Every question requires a complete affirmative verdict; malformed, missing, duplicate or negative verdicts reject the quiz.
+8. Return questions with sources: [{document_id, filename, page, quote}]. Pages are physical PDF pages starting at 1, including front matter.
+9. After answering, the frontend shows the correct answer, explanation, and supporting PDF quotes with page numbers (QuizExplanation.jsx).
+10. The frontend caches quizzes under a versioned key so old quizzes without sources regenerate, and users can explicitly regenerate.
+
+Quote matching verifies provenance. The separate model review adds a semantic quality check, but is not a guarantee of correctness. Both calls observe cooperative cancellation and the remaining task deadline; a failed review never returns a successful partial quiz.

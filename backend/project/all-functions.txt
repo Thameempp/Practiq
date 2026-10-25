@@ -1,0 +1,573 @@
+Updated: 2026-10-25
+Scope: Python functions defined under backend/app, including private functions, class methods and named nested functions.
+Format: module:qualified_function - purpose.
+Imported/re-exported functions, anonymous lambdas, tests and frontend code are excluded.
+Total: 402 function definitions in 166 source files.
+
+app/agents/answer_verifier_agent.py:AnswerVerifierAgent.__init__ - Initializes AnswerVerifierAgent with its configured state and inputs.
+app/agents/answer_verifier_agent.py:AnswerVerifierAgent.verify - Invokes the shared agent contract for a verification target.
+app/agents/answer_verifier_agent.py:AnswerVerifierAgent._run - Extracts original claims, reviews reused evidence and performs bounded additional discovery.
+app/agents/answer_verifier_agent.py:AnswerVerifierAgent._review - Reviews claims using only the source passages visible within the token budget.
+app/agents/answer_verifier_agent.py:AnswerVerifierAgent._stage - Checks task activity and publishes verification progress.
+
+app/agents/base.py:BaseAgent.run - Checks task cancellation and deadlines around synchronous agent execution.
+app/agents/base.py:BaseAgent._run - Defines the subclass execution contract for synchronous agents.
+
+app/agents/document_understanding_agent.py:DocumentUnderstandingAgent.understand - Invokes the document-understanding agent for supplied PDF content.
+app/agents/document_understanding_agent.py:DocumentUnderstandingAgent._run - Inventories physical pages and builds the reconciled document map and topic index.
+
+app/agents/evaluation_agent.py:EvaluationAgent.__init__ - Initializes EvaluationAgent with its configured state and inputs.
+app/agents/evaluation_agent.py:EvaluationAgent.evaluate - Validates structure, count and PDF provenance, then reviews answer/explanation support and ambiguity.
+app/agents/evaluation_agent.py:EvaluationAgent._run - Checks MCQ structure and grounding, then requires affirmative answer and applicable novelty review.
+
+app/agents/mcq_generation_agent.py:MCQGenerationAgent.__init__ - Initializes MCQGenerationAgent with its configured state and inputs.
+app/agents/mcq_generation_agent.py:MCQGenerationAgent.generate - Coordinates scoped evidence retrieval, JSON generation and mandatory evaluation.
+app/agents/mcq_generation_agent.py:MCQGenerationAgent._run - Retrieves scoped evidence, generates structured questions and requires evaluator approval.
+
+app/agents/pdf_summary_agent.py:PDFSummaryAgent.__init__ - Initializes PDFSummaryAgent with its configured state and inputs.
+app/agents/pdf_summary_agent.py:PDFSummaryAgent.summarize - Invokes the summary agent with source chunks, outline and requested format.
+app/agents/pdf_summary_agent.py:PDFSummaryAgent._run - Maps every prepared passage to notes and reduces them into a complete document summary.
+app/agents/pdf_summary_agent.py:PDFSummaryAgent._generate - Generates an intermediate note with the configured retry policy and size limit.
+app/agents/pdf_summary_agent.py:PDFSummaryAgent._generate_final - Generates final prose through the final adapter or bounded retry helper.
+
+app/agents/retrieval_agent.py:RetrievalAgent.__init__ - Initializes RetrievalAgent with its configured state and inputs.
+app/agents/retrieval_agent.py:RetrievalAgent.retrieve - Invokes scoped evidence retrieval with optional search and topic context.
+app/agents/retrieval_agent.py:RetrievalAgent._run - Combines dense/BM25 search, structural seeds, neighbor expansion, reranking and budgeted selection.
+
+app/api/api.py:health_check - Returns the backend health status.
+app/api/api.py:root - Returns the root API status.
+app/api/api.py:ask - Routes a question and returns clarification JSON or an optional SSE/plain-text workflow stream.
+app/api/api.py:generate_quiz - Returns fresh evaluated, cited MCQs through the orchestrator.
+
+app/api/document_map.py:get_document_map - Returns a stored or refreshed document-understanding map.
+
+app/api/documents.py:documents - Lists PDFs belonging to the requested knowledge base.
+app/api/documents.py:sync_documents - Restores current PDF metadata and reports missing saved documents.
+
+app/api/lifecycle.py:lifespan - Closes orchestration resources when the application shuts down.
+
+app/api/sources.py:original_pdf - Serves original PDFs inline with byte-range support.
+app/api/sources.py:citation - Resolves an authorized citation for the PDF viewer.
+
+app/api/stream_events.py:encode_event - Separates optional SSE progress, text and safe error events.
+
+app/api/verification.py:verify - Runs answer verification as JSON or a streamed workflow.
+
+app/api/workflow_stream.py:response_headers - Builds streaming response headers with workflow identity.
+app/api/workflow_stream.py:stream_workflow - Streams workflow events and observes client disconnection.
+
+app/chat/budget.py:input_limit - Calculates the available chat input token budget.
+app/chat/budget.py:fit_history - Fits recent conversation turns into the remaining input budget.
+app/chat/budget.py:build_prompt - Fits role-based history and PDF evidence around required input and reserved output.
+app/chat/budget.py:build_prompt.messages - Builds role-based messages for a candidate evidence/history selection.
+app/chat/budget.py:validate_messages - Rejects chat messages that exceed configured token limits.
+
+app/chat/context.py:scope_key - Creates a comparable key for the selected document section.
+app/chat/context.py:attach_history - Loads consecutive turns matching the document set and selected section.
+app/chat/context.py:followup_documents - Resolves a referential request against the last successful document selection.
+
+app/chat/followup.py:is_followup - Detects questions that refer to an earlier exchange.
+app/chat/followup.py:contextual_query - Adds a bounded topic anchor and previous-answer excerpt to retrieval queries.
+
+app/chat/llm.py:stream_answer - Enforces complete prompt and output limits while streaming QA responses.
+
+app/chat/persistence.py:remember_exchange - Saves only successful grounded workflows.
+
+app/chat/prompts.py:user_prompt - Formats document evidence, the user question and optional scope instructions.
+
+app/chat/retention.py:retain_turns - Keeps recent conversation turns within retention limits.
+app/chat/retention.py:retain_turns.cost_with_answer - Calculates retained-turn token cost including its answer.
+
+app/chat/store.py:read_turns - Loads retained conversation turns for the requested chat.
+app/chat/store.py:append_turn - Atomically appends, deduplicates and bounds completed conversation exchanges.
+app/chat/store.py:forget_document - Purges history referring to a deleted PDF.
+
+app/chat/tokens.py:message_tokens - Counts tokens used by role-based chat messages.
+app/chat/tokens.py:clip_tokens - Clips text to a bounded token allowance.
+app/chat/tokens.py:turn_messages - Converts a saved turn into user/assistant messages.
+
+app/citations/catalog.py:emit_metadata - Publishes citation metadata through the active task context.
+app/citations/catalog.py:attach_sources - Attaches canonical, page-addressable PDF source IDs before prompt budgeting.
+app/citations/catalog.py:publish_sources - Persists and streams only final selected evidence.
+
+app/citations/documents.py:require_pdf - Confines ready document files to the upload directory.
+app/citations/documents.py:revision_of - Computes the revision identity of an uploaded PDF.
+
+app/citations/markers.py:CitationMarkers.__init__ - Initializes CitationMarkers with its configured state and inputs.
+app/citations/markers.py:CitationMarkers.feed - Incrementally validates source markers while buffering incomplete streamed references.
+app/citations/markers.py:cited_answer - Validates complete streamed source markers and closes cancelled provider iterators.
+
+app/citations/models.py:Source.public - Returns the public citation metadata payload.
+
+app/citations/quiz.py:cite_quiz - Registers verified quiz explanation passages for the shared viewer.
+
+app/citations/store.py:source_for - Creates a canonical citation source for an original PDF passage.
+app/citations/store.py:save_sources - Persists canonical citation sources.
+app/citations/store.py:resolve_source - Resolves persisted sources after checking knowledge-base membership and original-file revision.
+
+app/citations/summary.py:summary_source - Links summary coverage pages without inventing passage highlights.
+
+app/core/config.py:Settings.__post_init__ - Validates chat retention/token limits and summary token, timeout and provider-rate limits.
+
+app/documents/clarification.py:pending_request - Loads an unfinished document-clarification request.
+app/documents/clarification.py:save_clarification - Saves candidate PDFs and the pending clarification question.
+app/documents/clarification.py:remember_selection - Records the selected document IDs for follow-up routing.
+
+app/documents/conversation.py:read_state - Reads unexpired conversation state from SQLite.
+app/documents/conversation.py:write_state - Persists conversation state with its expiration time.
+app/documents/conversation.py:clear_state - Removes the selected conversation-state record.
+
+app/documents/database.py:connection - Opens an initialized SQLite connection with transaction handling and cleanup.
+
+app/documents/deletion.py:delete_document_data - Removes document vectors, cached chunks, original PDF and registry data.
+
+app/documents/matching.py:normalize - Normalizes document references for matching.
+app/documents/matching.py:named_matches - Matches explicit document names against available PDFs.
+app/documents/matching.py:ordinal_index - Resolves a numbered document selection from a message.
+
+app/documents/migration.py:adopt_local_document - Registers a compatible legacy local PDF in the knowledge base.
+
+app/documents/repository.py:save_document - Creates or updates a document registry entry within its knowledge base.
+app/documents/repository.py:list_documents - Loads registered PDFs in the requested display order.
+app/documents/repository.py:get_document - Looks up one PDF within an authorized knowledge base.
+app/documents/repository.py:delete_record - Deletes the PDF registry entry and its related local records.
+
+app/documents/resolver.py:resolve_documents - Resolves summary document selection or returns clarification/readiness information.
+app/documents/resolver.py:selected - Builds a resolved document selection after checking indexing readiness.
+app/documents/resolver.py:_result - Constructs a document-resolution status and candidate list.
+app/documents/resolver.py:resolve_qa - Selects current PDFs for explicit, scoped or knowledge-base-wide questions.
+
+app/documents/sections.py:section_range - Resolves a selected outline node to its physical PDF page range.
+app/documents/sections.py:section_range.visit - Traverses outline nodes to find the selected section and its page boundary.
+
+app/documents/summary_scope.py:whole_document_summary - Identifies explicit whole-PDF requests that override section focus.
+
+app/orchestration/agent_activity.py:agent_activity - Reports nested agent lifecycle activity around task execution.
+
+app/orchestration/completion.py:complete - Collects a completed worker result and updates workflow task state.
+app/orchestration/completion.py:stop_task - Stops an active task and records its terminal status.
+app/orchestration/completion.py:stop_pending - Marks pending tasks stopped when a workflow cannot continue.
+
+app/orchestration/cross_document.py:answer_across_documents - Retrieves per-PDF evidence and streams a combined grounded answer.
+
+app/orchestration/decision.py:RoutingDecision.response - Builds the public routing-decision response payload.
+
+app/orchestration/dispatch.py:launch_ready - Submits dependency-ready tasks within worker and concurrency limits.
+
+app/orchestration/events.py:publish - Enqueues a workflow event while observing task cancellation.
+app/orchestration/events.py:drain - Yields queued workflow events.
+app/orchestration/events.py:render_event - Converts workflow events into public text without leaking internal errors.
+
+app/orchestration/execution.py:execute_decision - Executes an existing routing decision through the shared orchestrator.
+
+app/orchestration/executor.py:TaskExecutor.__init__ - Initializes TaskExecutor with its configured state and inputs.
+app/orchestration/executor.py:TaskExecutor.events - Schedules bounded tasks, enforces dependencies/deadlines and yields workflow events.
+app/orchestration/executor.py:TaskExecutor.close - Signals shutdown and closes the bounded worker pool.
+
+app/orchestration/mcq_workflow.py:resolve_quiz - Validates quiz document ownership, readiness and scope before planning.
+app/orchestration/mcq_workflow.py:generate_quiz_task - Generates fresh validated questions and registers their evidence and citations.
+
+app/orchestration/orchestration.py:Orchestrator.__init__ - Initializes Orchestrator with its configured state and inputs.
+app/orchestration/orchestration.py:Orchestrator.prepare - Attaches matching chat history and prepares a routed workflow safely.
+app/orchestration/orchestration.py:Orchestrator.from_decision - Builds and validates a task plan and initializes per-request workflow state.
+app/orchestration/orchestration.py:Orchestrator.events - Executes task events and saves successful grounded exchanges.
+app/orchestration/orchestration.py:Orchestrator.stream - Yields public workflow text and closes the underlying event iterator.
+app/orchestration/orchestration.py:Orchestrator.quiz - Executes a ready-document MCQ plan with exclusions and returns its validated result.
+
+app/orchestration/qa_workflow.py:answer_question - Retrieves scoped evidence and streams a grounded answer with chat context.
+
+app/orchestration/router.py:build_plan - Maps a supported routing decision to bounded executable tasks.
+
+app/orchestration/routing.py:route_request - Analyzes a request and resolves documents, scope and workflow action.
+
+app/orchestration/runtime.py:TaskContext.check - Raises on task cancellation or an expired deadline.
+app/orchestration/runtime.py:TaskContext.emit - Emits text after checking task activity and marks output as published.
+app/orchestration/runtime.py:check_active - Raises when the active task is cancelled or past its deadline.
+app/orchestration/runtime.py:capture_evidence - Adds selected document evidence to the current task context.
+app/orchestration/runtime.py:report_progress - Publishes cancellation-aware task progress without adding prose.
+app/orchestration/runtime.py:request_timeout - Bounds a provider timeout by the remaining task deadline.
+app/orchestration/runtime.py:TaskCancellation.__init__ - Initializes TaskCancellation with its configured state and inputs.
+app/orchestration/runtime.py:TaskCancellation.set - Signals local task cancellation.
+app/orchestration/runtime.py:TaskCancellation.is_set - Checks local cancellation or parent workflow cancellation.
+app/orchestration/runtime.py:TaskCancellation.wait - Waits for cancellation while observing parent state and an optional timeout.
+
+app/orchestration/service.py:get_orchestrator - Creates or returns the process-wide orchestrator safely.
+app/orchestration/service.py:close_orchestrator - Closes the shared orchestrator and releases its worker pool.
+
+app/orchestration/state.py:WorkflowState.finish - Records the workflow's final status and finish time.
+app/orchestration/state.py:WorkflowState.snapshot - Returns public workflow/task status, timing and evidence-count metadata.
+
+app/orchestration/structure_workflow.py:answer_structure - Answers a structural PDF question using the saved understanding map.
+app/orchestration/structure_workflow.py:answer_structure.link - Builds a canonical page citation for a structural answer.
+
+app/orchestration/summary_workflow.py:summarize_pdf - Produces a full-PDF or scoped summary and records source metadata.
+app/orchestration/summary_workflow.py:summarize_pdf.emit - Forwards final summary text through the active task context.
+app/orchestration/summary_workflow.py:render_summary - Formats generated summary text with coverage and source metadata.
+app/orchestration/summary_workflow.py:consolidate - Combines completed per-document summaries into a cited response.
+app/orchestration/summary_workflow.py:consolidate.emit - Forwards consolidated summary text through the active task context.
+
+app/orchestration/validation.py:validate_plan - Checks task identities, dependencies, limits and plan consistency.
+
+app/orchestration/verification_workflow.py:verify_answer - Runs the verification workflow and publishes its evidence and verdict.
+
+app/orchestration/worker.py:run_task - Executes one workflow task with deadline, cancellation and retry handling.
+app/orchestration/worker.py:_consume - Collects or streams a task result through its runtime context.
+
+app/query/analyzer.py:analyze_query - Classifies request intent, document reference and summary preferences.
+
+app/query/patterns.py:reference_of - Extracts a document reference from the user's message.
+
+app/routes/upload.py:upload_file - Saves, ingests, and outlines an uploaded PDF.
+app/routes/upload.py:delete_document - Deletes one PDF after checking its knowledge-base membership.
+
+app/services/chunk_ids.py:make_chunk_id - Creates a stable document chunk ID.
+app/services/chunk_ids.py:document_id_of - Reads a chunk's document ID.
+app/services/chunk_ids.py:chunk_index_of - Reads a chunk's numeric index.
+app/services/chunk_ids.py:_to_int - Safely converts a value to an integer.
+
+app/services/chunk_store.py:add_chunks - Adds chunks to the in-memory store.
+app/services/chunk_store.py:remove_chunks - Purges a document's chunks from the process-local cache.
+app/services/chunk_store.py:get_current_chunks - Returns cached chunks, optionally scoped.
+app/services/chunk_store.py:get_chunks_by_indexes - Finds chunks by document and indexes.
+app/services/chunk_store.py:_fetch_from_pinecone - Fetches missing chunks from Pinecone.
+
+app/services/chunker.py:word_spans - Finds text word offsets for page-aware chunk boundaries.
+app/services/chunker.py:chunk_pages - Creates overlapping word-based page chunks.
+
+app/services/context.py:normalize_question - Removes legacy scope decoration.
+app/services/context.py:build_retrieved_context - Formats bounded chunks for the LLM.
+app/services/context.py:expand_with_neighbor_chunks - Adds adjacent document chunks.
+app/services/context.py:_neighbor_indexes - Calculates neighboring chunk indexes.
+app/services/context.py:_neighbors_from_memory - Finds neighbors in the local cache.
+app/services/context.py:_fallback_chunk_id - Creates an ID for an unidentified chunk.
+
+app/services/embedding.py:_with_retry - Retries a provider operation after transient errors.
+app/services/embedding.py:get_embedding - Creates one text embedding.
+app/services/embedding.py:get_embedding._call - Invokes the provider for a single text embedding.
+app/services/embedding.py:get_embeddings_batch - Creates embeddings for multiple texts.
+app/services/embedding.py:get_embeddings_batch._call - Invokes the provider for a batch of text embeddings.
+
+app/services/generator.py:ask_pdf - Runs the legacy retrieval-and-answer adapter with safe errors and cooperative cancellation.
+app/services/generator.py:answer_context - Budgets evidence/history and streams a source-validated answer.
+app/services/generator.py:_stream_answer - Streams budgeted answer generation while reporting agent activity.
+
+app/services/hierarchy/classifier.py:build_style_profile - Builds document heading style statistics.
+app/services/hierarchy/classifier.py:classify_line - Assigns a hierarchy level to a line.
+app/services/hierarchy/classifier.py:dominant_body_size - Finds the dominant body font size.
+app/services/hierarchy/classifier.py:is_candidate_text - Checks whether text can be a heading.
+app/services/hierarchy/classifier.py:is_list_item - Checks whether text is a list item.
+app/services/hierarchy/classifier.py:_dominant_body_size - Calculates body font size internally.
+app/services/hierarchy/classifier.py:_document_title_size - Estimates the document title size.
+app/services/hierarchy/classifier.py:_is_document_title - Identifies a document title line.
+app/services/hierarchy/classifier.py:_numbered_heading_level - Detects numbered heading depth.
+app/services/hierarchy/classifier.py:_looks_like_ordered_body_step - Rejects ordered body steps.
+app/services/hierarchy/classifier.py:_visual_heading_level - Detects visual heading depth.
+app/services/hierarchy/classifier.py:_minimum_heading_size - Calculates the minimum heading size.
+app/services/hierarchy/classifier.py:_indent_depth - Calculates indentation-based depth.
+app/services/hierarchy/classifier.py:_is_short_heading_text - Checks heading text length.
+
+app/services/hierarchy/extractor.py:extract_hierarchy - Builds a hierarchy from TOC or PDF lines.
+
+app/services/hierarchy/line_extractor.py:collect_lines - Extracts structured visual lines from a PDF.
+app/services/hierarchy/line_extractor.py:_parse_line - Parses one PDF text line.
+app/services/hierarchy/line_extractor.py:_merge_same_row_markers - Joins markers on one row.
+app/services/hierarchy/line_extractor.py:_is_marker - Identifies bullet or numbering markers.
+app/services/hierarchy/line_extractor.py:_merge_marker_with_text - Joins a marker with its text.
+
+app/services/hierarchy/patterns.py:clean_text - Normalizes hierarchy text.
+app/services/hierarchy/patterns.py:is_bold - Checks PDF font bold flags.
+
+app/services/hierarchy/scope.py:parse_scope - Normalizes a selected frontend scope.
+app/services/hierarchy/scope.py:build_scope_search_text - Creates scope text for retrieval.
+app/services/hierarchy/scope.py:build_scope_prompt - Formats scope metadata for the LLM.
+app/services/hierarchy/scope.py:_coerce_page - Converts a page value to an integer.
+
+app/services/hierarchy/toc_hierarchy.py:hierarchy_from_toc - Converts a PDF TOC into nodes.
+app/services/hierarchy/toc_hierarchy.py:toc_hierarchy_for - Reads and builds hierarchy from a PDF TOC.
+app/services/hierarchy/toc_hierarchy.py:toc_hierarchy_for.excerpt_for - Extracts a page excerpt for a TOC node.
+
+app/services/hierarchy/tree_builder.py:build_hierarchy - Constructs the nested hierarchy tree.
+app/services/hierarchy/tree_builder.py:_append_excerpt - Appends text to a node excerpt.
+app/services/hierarchy/tree_builder.py:_attach_node - Attaches a node at the correct level.
+app/services/hierarchy/tree_builder.py:_new_node - Creates a hierarchy node.
+app/services/hierarchy/tree_builder.py:_node_title - Formats a node title.
+app/services/hierarchy/tree_builder.py:_node_type - Maps a level to a node type.
+app/services/hierarchy/tree_builder.py:_summary_from_line - Creates a short node summary.
+app/services/hierarchy/tree_builder.py:_attach_excerpts - Attaches buffered excerpts.
+app/services/hierarchy/tree_builder.py:_dedupe_tree - Removes duplicate hierarchy nodes.
+
+app/services/ingestion.py:ingest_chunks - Embeds, stores, and caches document chunks.
+
+app/services/loader.py:load_pdf - Extracts and cleans text from every PDF page.
+
+app/services/mcq/evaluator.py:validate_passages - Requires valid, document-specific PDF passages before quiz evaluation.
+app/services/mcq/evaluator.py:validate_grounding - Confirms MCQ source IDs and exact quotes and resolves real page metadata.
+
+app/services/mcq/evidence.py:retrieve_passages - Discovers bounded, scoped PDF evidence through the retrieval service.
+app/services/mcq/evidence.py:prepare_evidence - Builds the exact page-addressable passages available to the quiz model.
+app/services/mcq/evidence.py:_page_number - Coerces a valid positive physical PDF page number.
+
+app/services/mcq/generator.py:generate_mcqs - Delegates to the generation and evaluation agents through injected retrieval/provider adapters.
+
+app/services/mcq/history.py:topic_key - Creates a stable per-topic practice-history key.
+app/services/mcq/history.py:_read - Reads ordered practice-question history for one document/topic within a database connection.
+app/services/mcq/history.py:load_history - Loads previously generated question stems for a document/topic.
+app/services/mcq/history.py:save_questions - Atomically rejects repeats and stores accepted practice-question history.
+
+app/services/mcq/llm.py:make_generate_text - Builds a bounded JSON-generation/review adapter for the configured MCQ provider.
+app/services/mcq/llm.py:make_generate_text.generate_text - Calls the provider and rejects empty or truncated structured quiz output.
+
+app/services/mcq/novelty.py:DuplicateQuestion.__init__ - Initializes DuplicateQuestion with its configured state and inputs.
+app/services/mcq/novelty.py:normalized_question - Normalizes Unicode, case and punctuation for duplicate checks.
+app/services/mcq/novelty.py:ensure_distinct - Rejects repeated or closely reworded questions within a batch or history.
+app/services/mcq/novelty.py:novelty_context - Selects bounded recent question history for model prompts.
+
+app/services/mcq/practice.py:generate_practice - Generates fresh evaluated questions with bounded novelty retries and unique IDs.
+
+app/services/mcq/prompts.py:build_mcq_prompt - Builds the grounded MCQ generation prompt.
+
+app/services/mcq/quality.py:validate_review - Requires complete affirmative answer verdicts and applicable semantic-novelty approval.
+
+app/services/mcq/requests.py:validate_request - Validates direct quiz-generation inputs before retrieval or model work.
+
+app/services/mcq/review_prompt.py:build_review_prompt - Builds an evidence-based MCQ answer and semantic-novelty review prompt.
+
+app/services/mcq/schemas.py:MCQQuestionContent.validate_options - Checks option order and one-correct-answer rules.
+app/services/mcq/schemas.py:MCQRequest.validate_exclusions - Checks bounds and non-empty text for excluded practice questions.
+
+app/services/mcq/validator.py:parse_mcq_response - Validates structured MCQ model output.
+
+app/services/page_noise.py:line_key - Normalizes a line for repetition checks.
+app/services/page_noise.py:find_repeated_keys - Finds repeated page lines.
+app/services/page_noise.py:strip_repeated_lines - Removes repeated lines from a page.
+app/services/page_noise.py:clean_pages - Removes repeated page noise from extracted page text.
+app/services/page_noise.py:drop_repeated_lines - Removes repeated lines from extracted records.
+app/services/page_noise.py:_fused_pattern - Builds a pattern for repeated line matching.
+
+app/services/pdf_source.py:registered_document - Loads a registered document for original-source extraction.
+app/services/pdf_source.py:original_pages - Reads every physical page of a registered original PDF with bounded revision caching.
+app/services/pdf_source.py:_extract - Extracts original physical-page text for a cached PDF revision.
+app/services/pdf_source.py:complete_chunks - Verifies a registered document's full expected chunk-ID set.
+
+app/services/pinecone_index.py:get_index - Creates or returns the Pinecone index client.
+
+app/services/reranker.py:get_reranker - Loads and caches the cross-encoder.
+app/services/reranker.py:_candidate_text - Extracts candidate text for reranking.
+app/services/reranker.py:rerank_chunks - Sorts candidates by cross-encoder relevance.
+app/services/reranker.py:_ranker_text - Formats a candidate's text and topic context for cross-encoder reranking.
+
+app/services/retrieval/candidates.py:clean_candidates - Normalizes retrieval candidates and rejects wrong-document or invalid records.
+app/services/retrieval/candidates.py:finite_score - Converts a score to a usable finite numeric value.
+app/services/retrieval/candidates.py:_integer - Coerces finite integral metadata while rejecting booleans and fractional values.
+
+app/services/retrieval/context.py:format_chunk - Formats one evidence chunk with source, page and structural context.
+app/services/retrieval/context.py:format_context - Joins selected evidence chunks into the model context.
+app/services/retrieval/context.py:select_context - Chooses diverse relevant evidence within the token and chunk budgets.
+app/services/retrieval/context.py:expand_candidates - Adds authorized neighboring evidence within candidate limits.
+
+app/services/retrieval/corpus.py:original_chunks - Rebuilds the complete lexical corpus with ingestion-compatible IDs.
+
+app/services/retrieval/dense.py:search_vector - Queries dense document embeddings with applicable scope filters.
+app/services/retrieval/dense.py:_field - Reads a field from a provider object or dictionary.
+
+app/services/retrieval/discovery.py:discover_evidence - Runs bounded claim-focused searches through the shared retrieval system.
+app/services/retrieval/discovery.py:discover_evidence.retrieve - Retrieves and deduplicates one bounded specialist evidence search.
+
+app/services/retrieval/diversity.py:next_candidate - Balances cross-encoder relevance with context novelty.
+app/services/retrieval/diversity.py:next_candidate.score - Scores a candidate's relevance and novelty against selected evidence.
+app/services/retrieval/diversity.py:lexical_top - Distributes exact score ties across physical pages before cutoff.
+
+app/services/retrieval/lexical.py:terms - Tokenizes meaningful lexical terms while preserving technical distinctions.
+
+app/services/retrieval/models.py:RetrievalConfig.__post_init__ - Validates retrieval candidate, context, ranking and token-budget settings.
+
+app/services/retrieval/observability.py:timed_call - Measures a retrieval stage and records its latency.
+app/services/retrieval/observability.py:retrieval_result - Builds the retrieval response with selected evidence, statistics and timings.
+
+app/services/retrieval/query.py:prepare_query - Normalizes and validates the retrieval question and search text.
+
+app/services/retrieval/ranking.py:rank_candidates - Applies reranker scores, thresholds and result limits to candidates.
+app/services/retrieval/ranking.py:reciprocal_rank_fusion - Combines dense and lexical ranking positions without mixing raw score scales.
+
+app/services/retrieval/service.py:rerank_evidence - Cross-encoder-ranks candidate passages for the requested question.
+app/services/retrieval/service.py:fetch_neighbors - Loads adjacent stored chunks for retrieval expansion.
+app/services/retrieval/service.py:retrieve_evidence - Executes scoped retrieval with topic and document-structure context.
+app/services/retrieval/service.py:retrieve_context - Returns the selected source evidence from the retrieval pipeline.
+
+app/services/retrieval/sparse.py:search_sparse - Runs BM25 retrieval over the authorized local PDF corpus.
+
+app/services/retrieval/structure_context.py:StructureContext.__init__ - Initializes StructureContext with its configured state and inputs.
+app/services/retrieval/structure_context.py:StructureContext.apply - Applies canonical topic clipping and document-map annotations to candidates.
+app/services/retrieval/structure_context.py:StructureContext.seed_candidates - Returns bounded original chunk seeds from matched structural sections.
+
+app/services/retrieval/structure_evidence.py:supplement_candidates - Adds bounded original-chunk seeds from structural topic matches.
+app/services/retrieval/structure_evidence.py:structure_description - Formats document-map annotations separately from factual evidence.
+
+app/services/retrieval/tokens.py:_tokenizer - Loads an optional local generation tokenizer without downloading a model.
+app/services/retrieval/tokens.py:count_tokens - Counts text tokens using a local tokenizer or conservative byte fallback.
+app/services/retrieval/tokens.py:token_count_method - Reports the active token-counting strategy.
+
+app/services/retrieval/topics.py:resolve_topics - Finds canonical topic selection and boundaries for retrieval.
+app/services/retrieval/topics.py:resolve_topics.matches_query - Checks whether a topic is relevant to the retrieval query.
+app/services/retrieval/topics.py:canonical_scope - Resolves a frontend scope to the canonical document topic.
+app/services/retrieval/topics.py:source_in_scope - Checks whether a source passage falls inside the selected topic.
+
+app/services/retrieval/understanding.py:resolve_retrieval_context - Combines document-map hints with the shared topic selection.
+app/services/retrieval/understanding.py:match_topics - Matches query references to topics in the document understanding map.
+app/services/retrieval/understanding.py:_reference_label - Formats a matched structural reference for retrieval context.
+
+app/services/stored_chunks.py:read_stored_chunks - Fetches the document's persisted vector chunks.
+app/services/stored_chunks.py:_field - Reads a field from a provider object or dictionary.
+
+app/services/summary/budget.py:input_tokens - Counts system instructions and prompt framing for summary requests.
+app/services/summary/budget.py:check_prompt - Rejects summary prompts that exceed byte or token limits.
+app/services/summary/budget.py:source_tokens - Reserves output/instruction capacity before splitting PDF content.
+app/services/summary/budget.py:provider_options - Builds model-specific summary completion options.
+app/services/summary/budget.py:summary_timeout - Returns the configured maximum summary workflow timeout.
+app/services/summary/budget.py:can_finalize - Checks whether one prepared passage fits a final-summary request.
+
+app/services/summary/checkpoints.py:cached_generate - Reuses completed map/reduce/final stages and never caches partial streams.
+app/services/summary/checkpoints.py:cached_generate.run - Reuses valid saved output or generates, validates and checkpoints a completed summary stage.
+
+app/services/summary/chunks.py:prepare_chunks - Splits ordered PDF text into bounded page-aware summary chunks.
+app/services/summary/chunks.py:_split - Splits oversized summary text within the source token budget.
+app/services/summary/chunks.py:_page - Coerces a valid summary page number.
+
+app/services/summary/coverage.py:source_coverage - Records actual text pages and pages lacking selectable text.
+app/services/summary/coverage.py:coverage_note - Formats coverage and textless-page limitations for a summary.
+
+app/services/summary/digest.py:prepare_source - Fingerprints all original pages and prepares full-text or extractive summary inputs.
+
+app/services/summary/extractive.py:page_digest - Selects informative excerpts across a complete PDF page.
+
+app/services/summary/failures.py:failure_message - Maps summary-provider failures to safe, actionable user messages.
+
+app/services/summary/llm.py:make_generate_text - Builds a summary-stage provider adapter with shared capacity pacing.
+app/services/summary/llm.py:make_generate_text.generate_text - Generates bounded summary text and reconciles provider token usage.
+
+app/services/summary/metadata.py:summary_metadata - Reserves user focus and samples outline hints across the whole structure.
+
+app/services/summary/models.py:SummaryConfig.__post_init__ - Validates summary input/output, chunk, retry and provider-capacity limits.
+
+app/services/summary/multi_document.py:consolidate_summaries - Combines per-document summaries with bounded hierarchical reduction.
+app/services/summary/multi_document.py:_prompt - Builds the consolidation prompt from document summaries and the user request.
+
+app/services/summary/output.py:compact_prompt - Builds a repair prompt for an oversized summary response.
+
+app/services/summary/pacing.py:wait_for_capacity - Waits cooperatively for shared summary request/token capacity.
+app/services/summary/pacing.py:get_limiter - Returns the shared request/token limiter for a client and model.
+
+app/services/summary/prompts.py:summary_prompt - Builds map, merge or final summary instructions over supplied passages.
+
+app/services/summary/quota.py:usage_tokens - Extracts token usage from supported provider response formats.
+app/services/summary/quota.py:SummaryQuota.__init__ - Initializes SummaryQuota with its configured state and inputs.
+app/services/summary/quota.py:SummaryQuota.reserve - Reserves rolling request/token capacity and reports any required wait.
+app/services/summary/quota.py:SummaryQuota.reconcile - Reconciles reserved token capacity with actual provider usage.
+
+app/services/summary/reducer.py:reduce_summaries - Hierarchically merges bounded groups of summaries into final prose.
+app/services/summary/reducer.py:_groups - Packs consecutive summary notes within the merge input budget.
+
+app/services/summary/retry.py:call_with_retry - Retries eligible summary failures with bounded cancellation-aware backoff.
+app/services/summary/retry.py:_retry_after - Extracts a provider's suggested retry delay.
+
+app/services/summary/service.py:summarize_document - Connects complete PDF source preparation, checkpoints and summary generation.
+app/services/summary/service.py:stream_document_summary - Yields a document summary or a safe summary-failure message.
+
+app/services/summary/storage.py:load_summary_chunks - Loads complete original PDF text as page-addressable summary records.
+
+app/services/summary/streaming.py:make_stream_generate_text - Builds a cancellation-aware adapter for streaming final summary prose.
+app/services/summary/streaming.py:make_stream_generate_text.generate - Streams validated final summary prose while tracking usage and partial-output failures.
+
+app/services/topics/anchors.py:token - Normalizes heading tokens used for scope matching.
+app/services/topics/anchors.py:heading_position - Finds a heading's anchored location in original page text.
+app/services/topics/anchors.py:_symbols - Preserves meaningful symbols when normalizing heading text.
+app/services/topics/anchors.py:heading_span - Finds the original text span corresponding to a heading.
+
+app/services/topics/builder.py:build_topic_index - Builds canonical topic hierarchy, boundaries and chunk associations.
+app/services/topics/builder.py:build_topic_index.visit - Traverses hierarchy nodes to assign canonical parent/child topic boundaries.
+
+app/services/topics/context.py:overlap - Calculates overlap between topic and chunk ranges.
+app/services/topics/context.py:TopicContext.apply - Clips candidate chunks to selected canonical topic boundaries.
+app/services/topics/context.py:TopicContext.vector_filter - Builds the dense-search metadata filter for the selected document/topic pages.
+app/services/topics/context.py:TopicContext.allows_quote - Checks whether a quote lies within the canonical topic boundary.
+
+app/services/topics/storage.py:signature - Computes the source signature used to validate a saved topic index.
+app/services/topics/storage.py:save_topics - Persists the canonical topic index for a document.
+app/services/topics/storage.py:_pages - Loads original pages used to build or refresh topic boundaries.
+app/services/topics/storage.py:load_topics - Loads or locally rebuilds a document's canonical topic index.
+
+app/services/understanding/answers.py:structure_answer - Formats a structural document-map answer without vector or LLM inference.
+app/services/understanding/answers.py:_section_line - Formats one mapped section with its page location.
+
+app/services/understanding/heading_fallback.py:inferred_headings - Infers fallback headings when the PDF outline is incomplete.
+
+app/services/understanding/inventory.py:inspect_pages - Inventories text and structural metadata from every physical PDF page.
+
+app/services/understanding/kinds.py:section_kind - Classifies a section's structural/content role.
+
+app/services/understanding/labels.py:printed_label - Detects a page's printed label separately from its physical index.
+
+app/services/understanding/query.py:structure_query - Recognizes questions about PDF structure, counts and locations.
+
+app/services/understanding/reconcile.py:reconcile_hierarchy - Reconciles extracted outline nodes with observed page text.
+app/services/understanding/reconcile.py:reconcile_hierarchy.visit - Traverses and reconciles hierarchy nodes against inspected physical pages.
+app/services/understanding/reconcile.py:reconcile_hierarchy.visit.located - Tests an outline heading's location in the inspected page inventory.
+
+app/services/understanding/sections.py:map_sections - Creates section records and physical page boundaries from the hierarchy.
+
+app/services/understanding/selection.py:matching_sections - Selects document-map sections matching a structural reference.
+app/services/understanding/selection.py:selected_topics - Finds mapped topics inside selected sections.
+
+app/services/understanding/service.py:analyze_document - Builds and persists the document's understanding map and shared topics.
+app/services/understanding/service.py:document_map - Loads a revision-checked understanding map or backfills it from the original PDF.
+app/services/understanding/service.py:annotate_map - Adds mapped physical ranges, printed labels and confidence to outline nodes.
+app/services/understanding/service.py:annotate_map.visit - Traverses outline nodes and attaches matching document-map metadata.
+
+app/services/understanding/storage.py:forget_map - Removes a document's persisted understanding-map records.
+app/services/understanding/storage.py:save_map - Persists the document map and its page, section and topic records.
+app/services/understanding/storage.py:read_map - Loads and validates a saved map against the document revision.
+
+app/services/understanding/topics.py:map_topics - Builds mapped topic records associated with document sections.
+app/services/understanding/topics.py:map_topics.chapter - Finds the containing chapter for a mapped topic.
+
+app/services/understanding/visuals.py:page_elements - Inventories detectable page elements without claiming visual semantic understanding.
+
+app/services/upload_pipeline.py:annotate_hierarchy - Adds document identity and filename to every outline node.
+app/services/upload_pipeline.py:process_document - Runs document understanding and vector ingestion and updates registry status.
+
+app/services/verification/budget.py:bounded_target - Clips the verification target answer to its token limit and records truncation.
+app/services/verification/budget.py:build_prompt - Fits verification instructions, claims and source passages within the token budget.
+app/services/verification/budget.py:build_prompt.size - Measures a candidate verification prompt against its token budget.
+
+app/services/verification/detection.py:is_verification_request - Detects a request to recheck a previous answer.
+
+app/services/verification/evidence.py:confirm_sources - Confirms canonical sources against original PDF quotes and scope.
+app/services/verification/evidence.py:load_sources - Loads reusable evidence for the verification target.
+app/services/verification/evidence.py:sources_from_chunks - Converts retrieved chunks into confirmed verification sources.
+app/services/verification/evidence.py:pinpoint_sources - Finds exact quoted evidence within original PDF pages.
+
+app/services/verification/llm.py:make_generate_text - Builds the structured model adapter used by the Answer Verifier.
+app/services/verification/llm.py:make_generate_text.generate - Calls the verifier model within the active task's input/output and deadline limits.
+
+app/services/verification/render.py:escape - Escapes text used in verification Markdown output.
+app/services/verification/render.py:render_result - Formats the verification verdict, claim evidence and corrections.
+
+app/services/verification/results.py:insufficient - Creates claim verdicts when no usable supporting evidence is available.
+app/services/verification/results.py:overall - Derives the overall verification verdict from claim results.
+app/services/verification/results.py:make_result - Builds the final verification result, coverage and limitations.
+
+app/services/verification/routing.py:route_verification - Resolves the original target, documents and scope for rechecking.
+
+app/services/verification/search.py:targeted_search - Delegates bounded disputed-claim discovery to the retrieval system.
+
+app/services/verification/service.py:verify_target - Connects verifier generation, source loading, evidence discovery and progress.
+
+app/services/verification/storage.py:save_target - Stores a verification target with its bounded conversation state.
+app/services/verification/storage.py:read_target - Loads an unexpired original answer target for verification.
+app/services/verification/storage.py:record_audit - Persists a bounded verification audit entry.
+app/services/verification/storage.py:forget_verification - Purges verification state associated with a deleted PDF.
+
+app/services/verification/validation.py:normalized - Normalizes Unicode and whitespace for verification quote comparisons.
+app/services/verification/validation.py:parse_model - Validates structured verifier output against the required model.
+app/services/verification/validation.py:parse_claims - Requires unique claims that are present in the original answer.
+app/services/verification/validation.py:validate_review - Requires complete claim review, confirmed source quotes and evidence-consistent verdicts/corrections.

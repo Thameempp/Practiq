@@ -1,0 +1,7 @@
+1. Save the uploaded PDF and create a document ID.
+2. Load page text with the PDF loader.
+3. Split pages into overlapping 120-word chunks.
+4. Generate embeddings for the chunks.
+5. Upsert vectors and metadata into Pinecone.
+6. Add chunks to the in-memory lexical store.
+7. Extract and annotate the document hierarchy.

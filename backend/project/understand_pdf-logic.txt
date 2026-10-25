@@ -1,0 +1,5 @@
+1. Open the uploaded PDF with PyMuPDF.
+2. Read text from each page in sorted reading order.
+3. Remove repeated headers, footers, and page noise.
+4. Keep each page as {"page": number, "text": text}.
+5. Return the cleaned page list and total page count.

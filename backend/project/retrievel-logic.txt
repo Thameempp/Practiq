@@ -1,0 +1,18 @@
+1. retrieval/query.py normalizes whitespace and legacy scope prefixes without changing the question's meaning. Section titles may bias SEARCH, but the original question is always passed to the reranker. Conflicting document IDs are rejected.
+2. RetrievalAgent receives injected dense_search, bm25_search, rerank and count_tokens functions. It returns evidence, never an answer or document summary. retrieval/service.py constructs one agent for the application.
+3. retrieval/dense.py performs embedding search with a Pinecone document_id filter (default top 20).
+4. retrieval/sparse.py runs BM25 over that document's in-memory text. After a restart, stored_chunks.py fetches the complete persisted text in batches; embeddings and top-k vector results are not used as the BM25 corpus. Chunks with no matching query terms are excluded.
+5. retrieval/candidates.py validates chunk IDs, nonempty text, positive physical PDF page ranges and document identity. Invalid/foreign chunks never enter fusion, reranking or the final context.
+6. retrieval/ranking.py fuses dense and sparse ranks using RRF, independent of raw score scales. Each ID contributes at most once per retriever; source ranks and raw scores are retained.
+7. retrieval/context.py optionally adds neighbors within the same document and candidate limit. Primary candidates retain priority. All added neighbors are reranked against the original question, rather than inheriting a fabricated relevance score.
+8. The existing cross-encoder scores candidates. The injected reranker returns (chunk, score) pairs. Only supplied candidate IDs and finite scores are accepted; metadata remains canonical. Negative logits are valid. No default minimum score is imposed; thresholds require evaluation.
+9. Context selection follows rerank order, deduplicates normalized text, and keeps whole chunks within final_top_k and the available token budget. Oversized chunks are skipped, never silently truncated. Source headers and separators count toward the budget, with reserved space for other prompt content.
+10. Results include question, status, reason when empty, source chunks, rendered context, actual candidate counts, token usage and per-stage latency. Chunks include text, PDF page_start/page_end, chunk_index, document/filename metadata, rerank_score and retrieval provenance.
+11. generator.py and the MCQ generator use the agent through retrieve_context(). Normal chat renders exactly the selected evidence; no-results skips the answer LLM and acknowledges missing information. Whole-document summaries continue to use PDFSummaryAgent.
+12. Logs record counts, scores and timings without PDF contents or user questions. Provider failures remain errors, distinct from successful retrieval with no evidence.
+
+Configuration: retrieval/models.py holds limits; app/core/config.py exposes context budget, reserved tokens and GENERATION_TOKENIZER_PATH. A configured local generation-model tokenizer is loaded without downloads. When none is configured, UTF-8 byte counts provide a conservative token upper bound, explicitly reported as utf8_upper_bound. This fallback can underuse the model's context window.
+
+Authorization: the agent accepts authorize_document(document_id) and checks it before either search. The current application has no authenticated user/tenant ownership model, so its default wiring does not invent ownership checks. Document filtering is isolation, not authorization. A multi-user deployment must inject a check bound to the authenticated identity.
+
+Evaluation: tune limits using labeled PDFs/questions. Track Recall@k for fused candidates and MRR/nDCG after reranking; do not choose a cutoff from an arbitrary score scale. Dependencies remain injectable for deterministic offline tests.
