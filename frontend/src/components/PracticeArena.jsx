@@ -1,23 +1,19 @@
-import { useMemo, useState } from 'react'
-import { getPracticeForNode } from '../data/practiceData'
+import { QuizExplanation } from './QuizExplanation'
+import { usePracticeQueue } from '../hooks/usePracticeQueue.js'
 
-export function PracticeArena({ node }) {
-  const [quizIndex, setQuizIndex] = useState(0)
-  const [selectedAnswers, setSelectedAnswers] = useState({}) // { [questionId]: optionKey }
 
-  const practice = useMemo(() => {
-    return getPracticeForNode(node)
-  }, [node])
-
-  if (!practice) {
-    return null
-  }
-
-  const { quiz, title } = practice
+export function PracticeArena({ node, documentId, scope }) {
+  const {
+    questions: quiz, answers: selectedAnswers, index: quizIndex,
+    status, error, pending, backgroundError, answer, select, retry,
+  } = usePracticeQueue(documentId, scope)
+  const title = node?.title || 'Selected section'
 
   // Score calculation
   const totalQuestions = quiz.length
   const answeredCount = Object.keys(selectedAnswers).length
+  const firstVisible = Math.max(0, Math.min(quizIndex - 2, totalQuestions - 5))
+  const visibleQuestions = quiz.slice(firstVisible, firstVisible + 5)
   const score = quiz.reduce((acc, q) => {
     const chosen = selectedAnswers[q.id]
     const correctOpt = q.options.find((opt) => opt.isCorrect)
@@ -29,20 +25,47 @@ export function PracticeArena({ node }) {
   const isCurrentAnswered = Boolean(currentChoice)
   const correctOpt = currentQuestion?.options.find((opt) => opt.isCorrect)
 
+
   function handleSelectOption(questionId, optionKey) {
-    if (selectedAnswers[questionId]) return
-    setSelectedAnswers((prev) => ({
-      ...prev,
-      [questionId]: optionKey,
-    }))
+    answer(questionId, optionKey)
   }
+
 
   function handlePrevQuestion() {
-    setQuizIndex((prev) => Math.max(0, prev - 1))
+    select(Math.max(0, quizIndex - 1))
   }
 
+
   function handleNextQuestion() {
-    setQuizIndex((prev) => Math.min(totalQuestions - 1, prev + 1))
+    select(Math.min(totalQuestions - 1, quizIndex + 1))
+  }
+
+  if (documentId && status === 'loading') {
+    return (
+      <div className="practice-arena" role="status" aria-label={`Generating practice for ${title}`}>
+        <div className="practice-body">
+          <p className="empty-hint">Generating questions from this section...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!documentId || status === 'error') {
+    return (
+      <div className="practice-arena" role="alert">
+        <div className="practice-body">
+          <p className="error-message">{error || 'Upload a document before starting practice.'}</p>
+          <button
+            type="button"
+            className="quiz-nav-btn is-primary is-ready"
+            onClick={retry}
+            disabled={!documentId}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -54,7 +77,8 @@ export function PracticeArena({ node }) {
             {/* Top Question Progress & Score Bar */}
             <div className="practice-quiz-topbar">
               <div className="quiz-pills-nav" role="tablist" aria-label="Question selector">
-                {quiz.map((q, idx) => {
+                {visibleQuestions.map((q, offset) => {
+                  const idx = firstVisible + offset
                   const answered = selectedAnswers[q.id]
                   const qCorrect = q.options.find((opt) => opt.isCorrect)
                   const isCorrect = answered === qCorrect?.key
@@ -70,7 +94,7 @@ export function PracticeArena({ node }) {
                       type="button"
                       key={q.id}
                       className={`quiz-pill-btn ${isActive ? 'is-active' : ''} ${statusClass}`}
-                      onClick={() => setQuizIndex(idx)}
+                      onClick={() => select(idx)}
                       title={`Jump to Question ${idx + 1}`}
                     >
                       <span>Q{idx + 1}</span>
@@ -84,7 +108,10 @@ export function PracticeArena({ node }) {
 
               <div className="quiz-topbar-right">
                 <span className="quiz-score-tag">
-                  Score: <strong>{score}</strong> / {totalQuestions}
+                  Score: <strong>{score}</strong> / {answeredCount}
+                </span>
+                <span className="practice-queue-status" role="status">
+                  {pending ? 'Preparing next question…' : ''}
                 </span>
               </div>
             </div>
@@ -133,10 +160,11 @@ export function PracticeArena({ node }) {
 
               {/* Instant Answer Explanation */}
               {isCurrentAnswered && (
-                <div className={`question-explanation ${currentChoice === correctOpt?.key ? 'is-pass' : 'is-fail'}`}>
-                  <strong>{currentChoice === correctOpt?.key ? '✓ Correct!' : '✕ Key Principle:'}</strong>{' '}
-                  <span>{currentQuestion.explanation}</span>
-                </div>
+                <QuizExplanation
+                  scope={scope}
+                  question={currentQuestion}
+                  isCorrect={currentChoice === correctOpt?.key}
+                />
               )}
 
               {/* Navigation Controls for Single Question */}
@@ -160,18 +188,13 @@ export function PracticeArena({ node }) {
                   onClick={handleNextQuestion}
                   disabled={quizIndex >= totalQuestions - 1}
                 >
-                  Next Question →
+                  {quizIndex >= totalQuestions - 1 && pending ? 'Preparing…' : 'Next Question →'}
                 </button>
               </div>
             </div>
 
-            {/* Quiz Completion Banner if all answered */}
-            {answeredCount === totalQuestions && (
-              <div className="quiz-completion-banner">
-                <div className="completion-copy">
-                  <strong>🎯 Practice Complete!</strong> You scored {score} of {totalQuestions} ({Math.round((score / totalQuestions) * 100)}%).
-                </div>
-              </div>
+            {backgroundError && (
+              <p className="practice-queue-status" role="status">{backgroundError} Your current questions are still available.</p>
             )}
           </div>
         )}

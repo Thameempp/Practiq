@@ -1,18 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { DOCUMENT_HIERARCHY } from '../data/documentHierarchy'
 
 const DEFAULT_WIDTH = 270
 const MIN_WIDTH = 180
 const MAX_WIDTH = 550
 
+
 export function HierarchyTree({
   scopedNode,
   onSelectScope,
-  onInspectNode,
-  onActionPrompt,
   currentPdf,
+  hierarchy = [],
 }) {
-  const [openMenuId, setOpenMenuId] = useState(null)
   const [width, setWidth] = useState(() => {
     try {
       const saved = localStorage.getItem('practiq_hierarchy_width')
@@ -44,6 +42,7 @@ export function HierarchyTree({
     }
   }, [])
 
+
   function handleClose() {
     setIsCollapsed(true)
     try {
@@ -52,6 +51,7 @@ export function HierarchyTree({
       // ignore
     }
   }
+
 
   function handleOpen() {
     setIsCollapsed(false)
@@ -65,12 +65,14 @@ export function HierarchyTree({
     }
   }
 
+
   const startResizing = useCallback((startX, startWidth) => {
     setIsResizing(true)
     document.body.style.cursor = 'col-resize'
     document.body.style.userSelect = 'none'
 
     let currentWidth = startWidth
+
 
     const onMove = (moveEvent) => {
       const currentX = moveEvent.touches ? moveEvent.touches[0].clientX : moveEvent.clientX
@@ -87,6 +89,7 @@ export function HierarchyTree({
       currentWidth = calculated
       setWidth(calculated)
     }
+
 
     const onEnd = () => {
       setIsResizing(false)
@@ -114,16 +117,19 @@ export function HierarchyTree({
     window.addEventListener('touchend', onEnd)
   }, [])
 
+
   function handleMouseDown(e) {
     e.preventDefault()
     startResizing(e.clientX, width)
   }
+
 
   function handleTouchStart(e) {
     if (e.touches.length === 1) {
       startResizing(e.touches[0].clientX, width)
     }
   }
+
 
   function handleResetWidth(e) {
     e.stopPropagation()
@@ -140,6 +146,8 @@ export function HierarchyTree({
   const scopedDescendantIds = useMemo(() => {
     if (!scopedNode) return new Set()
     const ids = new Set()
+
+
     function collect(node) {
       if (!node?.children) return
       for (const child of node.children) {
@@ -151,6 +159,7 @@ export function HierarchyTree({
     return ids
   }, [scopedNode])
 
+
   function handleNodeClick(node, e) {
     e.stopPropagation()
     if (scopedNode?.id === node.id) {
@@ -160,58 +169,12 @@ export function HierarchyTree({
     }
   }
 
-  function handleMenuToggle(nodeId, e) {
-    e.stopPropagation()
-    setOpenMenuId((prev) => (prev === nodeId ? null : nodeId))
-  }
 
-  function handleAction(prompt, e) {
-    e.stopPropagation()
-    setOpenMenuId(null)
-    onActionPrompt(prompt)
-  }
-
-  function getMenuActions(node, parent, level) {
-    if (level === 1) {
-      return [
-        {
-          label: '⚡ Summarize',
-          prompt: `Summarize "${node.title}" in 3 concise bullet points.`,
-        },
-        {
-          label: '💡 Explain',
-          prompt: `Explain "${node.title}" in simple terms with an analogy.`,
-        },
-        {
-          label: '📝 Quiz',
-          prompt: `Generate 3 practice quiz questions based on "${node.title}".`,
-        },
-      ]
-    }
-
-    if (level === 2) {
-      return [
-        {
-          label: '💡 Explain',
-          prompt: `Explain "${node.title}" in detail with examples.`,
-        },
-      ]
-    }
-
-    return [
-      {
-        label: '💡 Explain',
-        prompt: `Explain the concept of "${node.title}" from ${parent.title}.`,
-      },
-    ]
-  }
-
-  function renderTreeNode(node, level = 1, parent = null) {
+  function renderTreeNode(node, level = 1) {
     const isScoped = scopedNode?.id === node.id
     const isInScopedGroup = scopedDescendantIds.has(node.id)
     const children = node.children || []
     const hasChildren = children.length > 0
-    const actions = getMenuActions(node, parent, level)
 
     return (
       <li
@@ -223,58 +186,18 @@ export function HierarchyTree({
           onClick={(e) => handleNodeClick(node, e)}
         >
           <span className="ascii-node-dot" aria-hidden="true" />
-          <span className="ascii-title" title={node.title}>{node.title}</span>
+          <span className="ascii-title" title={[
+            node.title,
+            node.page ? `PDF p. ${node.page}${node.endPage > node.page ? `–${node.endPage}` : ''}` : '',
+            node.printedPage ? `Printed p. ${node.printedPage}` : '',
+            node.structureStatus ? `Structure: ${node.structureStatus}` : '',
+          ].filter(Boolean).join(' · ')}>{node.title}</span>
 
-          <div className="ascii-row-tools" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              className="ascii-more-btn"
-              onClick={(e) => handleMenuToggle(node.id, e)}
-              title="Actions"
-            >
-              ···
-            </button>
-
-            {openMenuId === node.id && (
-              <div className="ascii-menu" onClick={(e) => e.stopPropagation()}>
-                <button
-                  type="button"
-                  className="ascii-menu-item"
-                  onClick={(e) => {
-                    handleNodeClick(node, e)
-                    setOpenMenuId(null)
-                  }}
-                >
-                  {isScoped ? 'Clear Scope' : '🎯 Scope Retrieval'}
-                </button>
-                {actions.map((action) => (
-                  <button
-                    type="button"
-                    className="ascii-menu-item"
-                    key={action.label}
-                    onClick={(e) => handleAction(action.prompt, e)}
-                  >
-                    {action.label}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  className="ascii-menu-item"
-                  onClick={() => {
-                    setOpenMenuId(null)
-                    onInspectNode(node)
-                  }}
-                >
-                  📖 Read Text
-                </button>
-              </div>
-            )}
-          </div>
         </div>
 
         {hasChildren && (
           <ul className={`ascii-tree-list ${isScoped || isInScopedGroup ? 'is-scoped-group-list' : ''}`}>
-            {children.map((child) => renderTreeNode(child, level + 1, node))}
+            {children.map((child) => renderTreeNode(child, level + 1))}
           </ul>
         )}
       </li>
@@ -316,7 +239,6 @@ export function HierarchyTree({
         flex: `0 0 ${width}px`,
       }}
       aria-label="Document Tree"
-      onClick={() => setOpenMenuId(null)}
     >
       <div className="ascii-tree-body">
         {!currentPdf ? (
@@ -325,9 +247,15 @@ export function HierarchyTree({
             <p>No document loaded</p>
             <span>Upload a PDF to view document hierarchy</span>
           </div>
+        ) : hierarchy.length === 0 ? (
+          <div className="ascii-tree-empty-notice">
+            <span className="tree-empty-dash">—</span>
+            <p>No headings found</p>
+            <span>The PDF may not use distinct heading styles</span>
+          </div>
         ) : (
           <ul className="ascii-tree-list ascii-tree-root">
-            {DOCUMENT_HIERARCHY.map((chapter) => renderTreeNode(chapter))}
+            {hierarchy.map((chapter) => renderTreeNode(chapter))}
           </ul>
         )}
       </div>

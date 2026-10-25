@@ -1,95 +1,66 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { createStreamStore } from '../services/streamStore.js'
+import { streamRequest } from '../services/streamRequest.js'
+
 
 export function useTextStream() {
-  const [text, setText] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState('')
-  const abortControllerRef = useRef(null)
+  const active = useRef(null)
+  const [store] = useState(createStreamStore)
 
-  const startStream = useCallback(async ({ url, body, onText, onComplete }) => {
-    abortControllerRef.current?.abort()
 
-    const controller = new AbortController()
-    abortControllerRef.current = controller
-    setText('')
+  const settle = useCallback((request) => {
+    if (active.current !== request) return
+    store.finish()
+    active.current = null
+    setIsStreaming(false)
+    const { sources, citations } = store.getSnapshot()
+    request.onSettled?.(store.getText(), { sources, citations })
+  }, [store])
+
+
+  const stopStream = useCallback(() => {
+    const request = active.current
+    if (!request) return
+    request.controller.abort()
+    settle(request)
+  }, [settle])
+
+
+  const startStream = useCallback(async ({ url, body, onComplete, onRoute, onSettled }) => {
+    stopStream()
+    store.reset()
+    const request = { controller: new AbortController(), onSettled }
+    active.current = request
     setError('')
     setIsStreaming(true)
 
+
+    const current = () => active.current === request && !request.controller.signal.aborted
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: controller.signal,
+      const content = await streamRequest({ url, body, signal: request.controller.signal,
+        onText: (value) => { if (current()) store.update(value) },
+        onRoute: (route) => { if (current()) onRoute?.(route) },
+        onProgress: (update) => { if (current() && typeof update?.label === 'string') store.setStatus(update.label) },
+        onMetadata: (kind, value) => { if (current()) store.metadata(kind, value) },
       })
-
-      if (!response.ok) {
-        const message = await response.text()
-        throw new Error(message || `Request failed: ${response.status}`)
+      if (current()) {
+        store.finish()
+        onComplete?.(content)
       }
-
-      if (!response.body) {
-        throw new Error('The response did not contain a readable stream.')
-      }
-
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let accumulated = ''
-      let pending = ''
-      let frameId = null
-
-      const flush = () => {
-        frameId = null
-
-        if (!pending) return
-
-        accumulated += pending
-        pending = ''
-        setText(accumulated)
-        onText?.(accumulated)
-      }
-
-      while (true) {
-        const { value, done } = await reader.read()
-
-        if (done) break
-
-        pending += decoder.decode(value, { stream: true })
-
-        if (frameId === null) {
-          frameId = requestAnimationFrame(flush)
-        }
-      }
-
-      pending += decoder.decode()
-
-      if (frameId !== null) {
-        cancelAnimationFrame(frameId)
-        flush()
-      } else if (pending) {
-        flush()
-      }
-
-      onComplete?.(accumulated)
     } catch (streamError) {
-      if (streamError.name !== 'AbortError') {
-        setError(
-          streamError.message || 'Could not read the streaming response.',
-        )
+      if (current() && streamError.name !== 'AbortError') {
+        setError(streamError.message || 'Could not read the response.')
       }
     } finally {
-      if (abortControllerRef.current === controller) {
-        abortControllerRef.current = null
-      }
-      setIsStreaming(false)
+      settle(request)
     }
-  }, [])
-
-  const stopStream = useCallback(() => {
-    abortControllerRef.current?.abort()
-    abortControllerRef.current = null
-    setIsStreaming(false)
-  }, [])
-
-  return { text, isStreaming, error, startStream, stopStream }
+  }, [settle, stopStream, store])
+  useEffect(() => () => {
+    active.current?.controller.abort()
+    active.current = null
+    store.discard()
+  }, [store])
+  return { store, isStreaming, error, startStream, stopStream }
 }

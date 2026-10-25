@@ -1,0 +1,4 @@
+.source-citation { display: inline-flex; align-items: center; justify-content: center; min-width: 1.5em; border: 1px solid var(--border-medium); border-radius: 999px; background: var(--bg-subtle); color: var(--text-secondary); font: inherit; font-size: .72em; line-height: 1.5; cursor: pointer; padding: 0 .5em; margin-inline: .15em; vertical-align: baseline; }
+.source-citation:hover { background: var(--bg-subtle-hover); color: var(--text-primary); }
+.source-citation:focus-visible { outline: 2px solid var(--text-muted); outline-offset: 3px; }
+.pdf-opening { position: fixed; bottom: 2rem; right: 2rem; z-index: 100; padding: 1rem; background: #20211f; color: #fff; }
